@@ -1,7 +1,7 @@
 //****************************************//
 // Program: ANA_Multiplexer               //
 //                                        //
-// Date of latest revision: 5/7/2016      //
+// Date of latest revision: 6/10/2016     //
 // Author: Dr. Armen Amirkhanian          //
 // Copyright Armen Amirkhanian 2016       //
 //                                        //
@@ -35,7 +35,7 @@
 // xX\r
 //
 // x - can be anything except CR. Will be used in future updates.
-// X - channel to open
+// X - channel to open or enquiry
 // \r - all commands MUST be terminated with a CR
 //
 // Upon startup, all channels are closed
@@ -53,6 +53,7 @@
 //Define read buffer and confirmation variable
   char rBuffer[3];
   int rwSuccess;
+  char ack = 6;
 
 //Define error codes
   char errHeader = 21; //using NAK because it's old school
@@ -111,6 +112,11 @@ int SwitchChannel(int toCH){
   return toCH+1;
 }
 
+void ack(){
+  Serial.write(ack);
+  Serial.write('\r');
+}
+
 void setup() {
   // Enable all I/O pins in use
   pinMode(EN,OUTPUT);
@@ -143,9 +149,14 @@ void loop() {
     digitalWrite(GRELED,HIGH);
     Serial.readBytesUntil('\r',rBuffer,3);
     if(rBuffer[1]<65 || rBuffer[1]>96){
+      if(rBuffer[1] = 5){
+        ack();
+      }
+      else{
       Serial.write(errHeader);
       Serial.write(outsideCHRange);
       Serial.write('\r');
+    }
     }
     else{
     rwSuccess = SwitchChannel(rBuffer[1]-65);
