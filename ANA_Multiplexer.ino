@@ -43,6 +43,12 @@
 // starting at 65 (A). For example, activating channel
 // 12 would be done by sending 'L' which is 76.
 
+#include <Wire.h>
+#include "Adafruit_LEDBackpack.h"
+#include "Adafruit_GFX.h"
+
+Adafruit_7segment matrix = Adafruit_7segment();
+
 //Change pinouts based on setup/board  
   const int EN = 10;
   const int WR = 6;
@@ -58,6 +64,16 @@
 //Define error codes
   char errHeader = 21; //using NAK because it's old school
   char outsideCHRange = 99;
+
+//Define custom characters for 7-segment display
+  uint8_t C = 0x39;
+  uint8_t H = 0x76;
+  uint8_t E = 0x79;
+  uint8_t r = 0x50;
+  uint8_t Exclamation = 0x82;
+  uint8_t A = 0x77;
+  uint8_t c = 0x58;
+  uint8_t n = 0x54;
 
 //Channnel switch truth table
   const int CH[32][5] = {
@@ -112,9 +128,40 @@ int SwitchChannel(int toCH){
   return toCH+1;
 }
 
-void ack(){
+void ackC(){
   Serial.write(ack);
   Serial.write('\r');
+  matrix.writeDigitRaw(0,A);
+  matrix.writeDigitRaw(1,c);
+  matrix.writeDigitRaw(3,n);
+  matrix.writeDigitRaw(4,Exclamation);
+  matrix.writeDisplay();
+}
+
+void LCD_err(){
+  matrix.writeDigitRaw(0,E);
+  matrix.writeDigitRaw(1,r);
+  matrix.writeDigitRaw(3,r);
+  matrix.writeDigitRaw(4,Exclamation);
+  matrix.writeDisplay();
+}
+
+void LCD_ch(int CH){
+  int pos3 = 0;
+  int pos4 = 0;
+  if(CH < 10){
+    pos3 = 0;
+    pos4 = CH;
+  }
+  else{
+    pos3 = floor(CH/10);
+    pos4 = (CH/10)%10;
+  }
+  matrix.writeDigitRaw(0,C);
+  matrix.writeDigitRaw(1,H);
+  matrix.writeDigitNum(3,pos3);
+  matrix.writeDigitNum(4,pos4);
+  matrix.writeDisplay();
 }
 
 void setup() {
@@ -140,6 +187,14 @@ void setup() {
 
   Serial.begin(9600);
   Serial.setTimeout(1000);
+
+  matrix.begin(0x70);
+  uint8_t blank = 0b00000000;
+  matrix.writeDigitRaw(0,blank);
+  matrix.writeDigitRaw(1,blank);
+  matrix.writeDigitRaw(3,blank);
+  matrix.writeDigitRaw(4,blank);
+  matrix.writeDisplay();
 }
 
 void loop() {
@@ -149,19 +204,21 @@ void loop() {
     digitalWrite(GRELED,HIGH);
     Serial.readBytesUntil('\r',rBuffer,3);
     if(rBuffer[1]<65 || rBuffer[1]>96){
-      if(rBuffer[1] = 5){
-        ack();
+      if(rBuffer[1] == 5){
+        ackC();
       }
       else{
       Serial.write(errHeader);
       Serial.write(outsideCHRange);
       Serial.write('\r');
+      LCD_err();
     }
     }
     else{
     rwSuccess = SwitchChannel(rBuffer[1]-65);
     Serial.print(rwSuccess);
     Serial.print('\r');
+    LCD_ch(rwSuccess);
     }
   }
   delay(4);//At a 9600 baud rate, a character is written about every ms
