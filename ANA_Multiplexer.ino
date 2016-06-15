@@ -131,6 +131,7 @@ int SwitchChannel(int toCH){
 void ackC(){
   Serial.write(ack);
   Serial.write('\r');
+  Serial.flush();
   matrix.writeDigitRaw(0,A);
   matrix.writeDigitRaw(1,c);
   matrix.writeDigitRaw(3,n);
@@ -211,6 +212,7 @@ void loop() {
       Serial.write(errHeader);
       Serial.write(outsideCHRange);
       Serial.write('\r');
+      Serial.flush();
       LCD_err();
     }
     }
@@ -218,6 +220,7 @@ void loop() {
     rwSuccess = SwitchChannel(rBuffer[1]-65);
     Serial.print(rwSuccess);
     Serial.print('\r');
+    Serial.flush();
     LCD_ch(rwSuccess);
     }
   }
